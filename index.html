@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Beach Pass Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
+
+  .top-bar { background: #fff; border-bottom: 1px solid #e5e3dd; padding: 0 2rem; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .top-bar-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; }
+  .top-bar-title .wave { font-size: 18px; }
+  .top-bar-date { font-size: 13px; color: #888; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.75rem; }
+  .stat { background: #fff; border: 1px solid #e5e3dd; border-radius: 10px; padding: 1rem 1.125rem; }
+  .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 500; }
+  .stat-val.green { color: #0F6E56; }
+
+  .beach-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .tab { padding: 6px 16px; border-radius: 20px; font-size: 13px; border: 1px solid #e5e3dd; background: #fff; cursor: pointer; color: #666; transition: all 0.15s; }
+  .tab:hover { border-color: #1D9E75; color: #1D9E75; }
+  .tab.active { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+
+  .panel { background: #fff; border: 1px solid #e5e3dd; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .panel-title { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+
+  input, select {
+    height: 38px; border: 1px solid #ddd; border-radius: 8px; padding: 0 12px;
+    font-size: 14px; font-family: inherit; background: #fff; color: #1a1a18;
+    outline: none; transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
+  input::placeholder { color: #aaa; }
+
+  .search-wrap { position: relative; margin-bottom: 1rem; }
+  .search-wrap input { width: 100%; padding-left: 36px; }
+  .search-wrap .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 15px; pointer-events: none; }
+  .autocomplete { position: absolute; top: 42px; left: 0; right: 0; background: #fff; border: 1px solid #e5e3dd; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 100; max-height: 280px; overflow-y: auto; display: none; }
+  .autocomplete.open { display: block; }
+  .ac-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #f0eee9; }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover { background: #f5fdf9; }
+  .ac-name { font-weight: 500; font-size: 14px; }
+  .ac-sub { font-size: 12px; color: #999; }
+  .ac-pass { font-family: 'SF Mono', monospace; font-size: 12px; color: #888; }
+  .ac-status { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .ac-in { background: #e1f5ee; color: #085041; }
+  .ac-out { background: #f1efe8; color: #5f5e5a; }
+
+  .selected-prop { display: none; background: #f5fdf9; border: 1px solid #9fe1cb; border-radius: 10px; padding: 14px 16px; margin-bottom: 1rem; }
+  .selected-prop.show { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .sp-info { flex: 1; }
+  .sp-name { font-weight: 500; font-size: 15px; }
+  .sp-sub { font-size: 13px; color: #666; margin-top: 2px; }
+  .sp-actions { display: flex; gap: 8px; }
+
+  .btn-in {
+    height: 38px; background: #1D9E75; color: #fff; border: none;
+    padding: 0 18px; border-radius: 8px; font-size: 14px; font-family: inherit;
+    cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-in:hover { background: #0F6E56; }
+  .btn-out {
+    height: 38px; background: #fff; color: #444; border: 1px solid #ddd;
+    padding: 0 18px; border-radius: 8px; font-size: 14px; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: background 0.15s;
+  }
+  .btn-out:hover { background: #f5f4f0; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-row input { flex: 2; min-width: 0; }
+  .filter-row select { flex: 1; min-width: 110px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #888; font-weight: 500; padding: 0 10px 10px 0; border-bottom: 1px solid #e5e3dd; }
+  td { padding: 10px 10px 10px 0; border-bottom: 1px solid #f0eee9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf8; }
+  .row-in td { background: #fafef9; }
+
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .b-in  { background: #e1f5ee; color: #085041; }
+  .b-out { background: #f1efe8; color: #5f5e5a; }
+  .b-mfd { background: #e6f1fb; color: #0c447c; }
+  .b-wusk { background: #faeeda; color: #633806; }
+  .b-dunes { background: #eeedfe; color: #3c3489; }
+
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #888; }
+
+  .act-btn {
+    height: 30px; padding: 0 12px; border-radius: 7px; font-size: 12px; font-family: inherit;
+    border: 1px solid #ddd; background: #fff; cursor: pointer; color: #444;
+    transition: background 0.1s; white-space: nowrap;
+  }
+  .act-btn:hover { background: #f5f4f0; }
+  .act-btn.danger:hover { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+  .act-btn.go:hover { background: #e1f5ee; color: #0f6e56; border-color: #9fe1cb; }
+  .acts { display: flex; gap: 6px; justify-content: flex-end; }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 14px; }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #0F6E56; }
+  .toast.error { background: #a32d2d; }
+
+  .note-tag { font-size: 11px; background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 1rem; }
+    .top-bar { padding: 0 1rem; }
+    th.hide-sm, td.hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-title">
+    <span class="wave">🏖️</span> Beach Pass Tracker
+  </div>
+  <div class="top-bar-date" id="top-date"></div>
+</div>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total properties</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-label">On beach now</div><div class="stat-val green" id="s-in">0</div></div>
+    <div class="stat"><div class="stat-label">Checked out</div><div class="stat-val" id="s-out">0</div></div>
+    <div class="stat"><div class="stat-label">Never checked in</div><div class="stat-val" id="s-never">0</div></div>
+  </div>
+
+  <div class="beach-tabs">
+    <button class="tab active" onclick="setBeach('all', this)">All beaches</button>
+    <button class="tab" onclick="setBeach('MFD', this)">Misquamicut / MFD</button>
+    <button class="tab" onclick="setBeach('Wuskenau', this)">Wuskenau</button>
+    <button class="tab" onclick="setBeach('Dunes', this)">Dunes</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Check in / check out a property</div>
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input type="text" id="prop-search" placeholder="Search by property name, address, or pass number…" autocomplete="off" oninput="onSearch()" onkeydown="onSearchKey(event)" />
+      <div class="autocomplete" id="ac-list"></div>
+    </div>
+    <div class="selected-prop" id="sel-prop">
+      <div class="sp-info">
+        <div class="sp-name" id="sel-name"></div>
+        <div class="sp-sub" id="sel-sub"></div>
+      </div>
+      <div class="sp-actions" id="sel-actions"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">All passes</div>
+    <div class="filter-row">
+      <input type="text" id="search" placeholder="Filter table…" oninput="renderTable()" />
+      <select id="filter-status" onchange="renderTable()">
+        <option value="all">All statuses</option>
+        <option value="in">Checked in</option>
+        <option value="out">Checked out</option>
+        <option value="never">Never checked in</option>
+      </select>
+      <select id="filter-beach" onchange="renderTable()">
+        <option value="all">All beaches</option>
+        <option value="MFD">MFD</option>
+        <option value="Wuskenau">Wuskenau</option>
+        <option value="Dunes">Dunes</option>
+      </select>
+      <button class="act-btn" onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div id="table-wrap"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROPERTIES = [
+  { name:"Sandbox", address:"4 Boxwood Ave", beach:"MFD", pass:"####", note:"Anchors Away label" },
+  { name:"Wojo's Home Away from Home", address:"66 Kimball Ave", beach:"MFD", pass:"4483" },
+  { name:"Florido", address:"3 Third St", beach:"MFD", pass:"4468" },
+  { name:"Gwennapaug Inn", address:"19 Rabbit Run", beach:"MFD", pass:"4467" },
+  { name:"Regan", address:"18 Second St", beach:"MFD", pass:"4466" },
+  { name:"Copper's Beach House", address:"102 Winnapaug Rd", beach:"MFD", pass:"4465" },
+  { name:"Beach Rose", address:"65 Kimball Ave", beach:"MFD", pass:"4482" },
+  { name:"Cape Franklin", address:"62 Fishermans Ave", beach:"MFD", pass:"4481" },
+  { name:"Moonshell", address:"61 Lawton Ave", beach:"MFD", pass:"4480" },
+  { name:"Seagals", address:"61 Benson Ave", beach:"MFD", pass:"4479" },
+  { name:"Vitamin Sea", address:"58 Kimball Ave", beach:"MFD", pass:"4478" },
+  { name:"Betty B", address:"54 Kimball Ave", beach:"MFD", pass:"4476" },
+  { name:"Seatauk", address:"51 Montauk Ave", beach:"MFD", pass:"4475" },
+  { name:"Oceaneer", address:"43 Lawton Ave", beach:"MFD", pass:"4473" },
+  { name:"Jacques", address:"51 Maplewood Ave", beach:"MFD", pass:"4474" },
+  { name:"Michaels", address:"87 Ocean View Hgwy", beach:"MFD", pass:"4489" },
+  { name:"Anchors Away", address:"4 Linwood Ave", beach:"MFD", pass:"4470" },
+  { name:"Beach Daze", address:"67 Lawton Ave", beach:"MFD", pass:"4484" },
+  { name:"Breeze Inn", address:"42 Kimball Ave", beach:"MFD", pass:"4472" },
+  { name:"Legasea", address:"40 Kimball Ave", beach:"MFD", pass:"4471" },
+  { name:"Atlantic Escape", address:"84 Winnapaug Rd", beach:"MFD", pass:"4488" },
+  { name:"Dad's Dream", address:"82 Winnapaug Rd", beach:"MFD", pass:"4487" },
+  { name:"Family Ties", address:"74 Uzzi Ave", beach:"MFD", pass:"4486" },
+  { name:"The Cedars", address:"74 Crandall Ave", beach:"MFD", pass:"4485" },
+  { name:"Sweet Dreams", address:"78 Uzzi Ave", beach:"MFD", pass:"4382" },
+  { name:"Stanton 1", address:"54 Atlantic Ave", beach:"MFD", pass:"4491" },
+  { name:"Stanton 2", address:"60 Atlantic Ave", beach:"MFD", pass:"4490" },
+  { name:"Stanton 3", address:"58 Atlantic Ave", beach:"MFD", pass:"4477" },
+  { name:"Seas The Day", address:"446 Atlantic Ave", beach:"Wuskenau", pass:"23" },
+  { name:"Searose", address:"420 Atlantic Ave", beach:"Wuskenau", pass:"22" },
+  { name:"Decked Out", address:"191 Shore Rd", beach:"Wuskenau", pass:"20" },
+  { name:"Hawk's Nest", address:"458 Atlantic Ave", beach:"Wuskenau", pass:"21" },
+  { name:"Alla Vita", address:"26 Clifford Dr", beach:"Dunes", pass:"3443" },
+  { name:"Bellaview", address:"10 Bellerose Ave", beach:"Dunes", pass:"3444" },
+  { name:"Breachway By The Sea", address:"1 Weekapaug Rd", beach:"Dunes", pass:"3445" },
+  { name:"Dolce Vita", address:"31 Charlene Ave", beach:"Dunes", pass:"3446" },
+  { name:"Dunes Hide-A-Way", address:"24 Quannacut Rd", beach:"Dunes", pass:"3447" },
+  { name:"Hatfield", address:"7 Painter Rd", beach:"Dunes", pass:"3448" },
+  { name:"Ianiello", address:"15 Terrace Ave", beach:"Dunes", pass:"3449" },
+  { name:"Liz's", address:"27 Langworthy Rd", beach:"Dunes", pass:"3450" },
+  { name:"Lois", address:"16 Ricci Rd", beach:"Dunes", pass:"3451" },
+  { name:"Matty", address:"17 Matarese Hills", beach:"Dunes", pass:"3452" },
+  { name:"Pond View", address:"32 Governor Ave", beach:"Dunes", pass:"3453" },
+  { name:"Sacco Large", address:"14 Utter St", beach:"Dunes", pass:"3454" },
+  { name:"The Sand Cliff", address:"20 Clifford Dr", beach:"Dunes", pass:"3455" }
+];
+
+let state = {};
+try { state = JSON.parse(localStorage.getItem('bpt_state') || '{}'); } catch(e) {}
+
+PROPERTIES.forEach(p => {
+  if (!state[p.pass]) state[p.pass] = { status: 'never', lastIn: null, lastOut: null, visits: 0 };
+});
+
+function save() {
+  try { localStorage.setItem('bpt_state', JSON.stringify(state)); } catch(e) {}
+}
+
+function ts() { return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
+function ds() { return new Date().toLocaleDateString([], { month:'short', day:'numeric' }); }
+function dts() { return ds() + ' ' + ts(); }
+
+let toastTimer;
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = 'toast', 3000);
+}
+
+document.getElementById('top-date').textContent = new Date().toLocaleDateString([], { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+let beachFilter = 'all';
+function setBeach(b, el) {
+  beachFilter = b;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+let selectedProp = null;
+let acIndex = -1;
+
+function matchProps(q) {
+  q = q.toLowerCase().trim();
+  if (!q) return [];
+  return PROPERTIES.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.address.toLowerCase().includes(q) ||
+    p.pass.includes(q)
+  ).slice(0, 8);
+}
+
+function onSearch() {
+  const q = document.getElementById('prop-search').value;
+  const results = matchProps(q);
+  const ac = document.getElementById('ac-list');
+  acIndex = -1;
+  if (!results.length || !q.trim()) { ac.className = 'autocomplete'; return; }
+  ac.className = 'autocomplete open';
+  ac.innerHTML = results.map((p, i) => {
+    const s = state[p.pass];
+    const statusBadge = s.status === 'in'
+      ? '<span class="ac-status ac-in">● in</span>'
+      : s.status === 'out'
+        ? '<span class="ac-status ac-out">○ out</span>'
+        : '';
+    return `<div class="ac-item" onclick="selectProp('${p.pass}')" data-i="${i}">
+      <div>
+        <div class="ac-name">${p.name}${p.note ? `<span class="note-tag">${p.note}</span>` : ''}</div>
+        <div class="ac-sub">${p.address} · ${p.beach}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="ac-pass">#${p.pass}</span>${statusBadge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onSearchKey(e) {
+  const ac = document.getElementById('ac-list');
+  const items = ac.querySelectorAll('.ac-item');
+  if (e.key === 'ArrowDown') { acIndex = Math.min(acIndex+1, items.length-1); highlightAc(items); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { acIndex = Math.max(acIndex-1, 0); highlightAc(items); e.preventDefault(); }
+  else if (e.key === 'Enter' && acIndex >= 0) { items[acIndex].click(); e.preventDefault(); }
+  else if (e.key === 'Escape') { ac.className = 'autocomplete'; }
+}
+
+function highlightAc(items) {
+  items.forEach((el, i) => el.style.background = i === acIndex ? '#f5fdf9' : '');
+}
+
+function selectProp(pass) {
+  const p = PROPERTIES.find(x => x.pass === pass);
+  if (!p) return;
+  selectedProp = p;
+  document.getElementById('prop-search').value = p.name;
+  document.getElementById('ac-list').className = 'autocomplete';
+  renderSelectedProp();
+}
+
+function renderSelectedProp() {
+  const p = selectedProp;
+  if (!p) return;
+  const s = state[p.pass];
+  const el = document.getElementById('sel-prop');
+  el.className = 'selected-prop show';
+  document.getElementById('sel-name').innerHTML = p.name + (p.note ? `<span class="note-tag">${p.note}</span>` : '');
+  document.getElementById('sel-sub').textContent = `${p.address} · ${p.beach} · Pass #${p.pass}` +
+    (s.lastIn ? ` · Last in: ${s.lastIn}` : '') +
+    (s.lastOut ? ` · Last out: ${s.lastOut}` : '');
+  const acts = document.getElementById('sel-actions');
+  if (s.status === 'in') {
+    acts.innerHTML = `<button class="btn-out" onclick="doCheckOut('${p.pass}')">Check out</button>`;
+  } else {
+    acts.innerHTML = `<button class="btn-in" onclick="doCheckIn('${p.pass}')">Check in</button>`;
+  }
+}
+
+function doCheckIn(pass) {
+  const p = PROPERTIES.find(x => x.pass === pass);
+  state[pass].status = 'in';
+  state[pass].lastIn = dts();
+  state[pass].visits = (state[pass].visits || 0) + 1;
+  toast(`${p.name} checked in ✓`);
+  save(); updateStats(); renderTable(); renderSelectedProp();
+}
+
+function doCheckOut(pass) {
+  const p = PROPERTIES.find(x => x.pass === pass);
+  state[pass].status = 'out';
+  state[pass].lastOut = dts();
+  toast(`${p.name} checked out`);
+  save(); updateStats(); renderTable(); renderSelectedProp();
+}
+
+function resetPass(pass) {
+  const p = PROPERTIES.find(x => x.pass === pass);
+  if (!confirm(`Reset status for ${p.name}?`)) return;
+  state[pass] = { status:'never', lastIn:null, lastOut:null, visits:0 };
+  toast(`${p.name} reset`);
+  save(); updateStats(); renderTable();
+  if (selectedProp && selectedProp.pass === pass) renderSelectedProp();
+}
+
+function updateStats() {
+  const all = PROPERTIES;
+  document.getElementById('s-total').textContent = all.length;
+  document.getElementById('s-in').textContent = all.filter(p => state[p.pass].status === 'in').length;
+  document.getElementById('s-out').textContent = all.filter(p => state[p.pass].status === 'out').length;
+  document.getElementById('s-never').textContent = all.filter(p => state[p.pass].status === 'never').length;
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const fStatus = document.getElementById('filter-status').value;
+  const fBeach = document.getElementById('filter-beach').value;
+  const filtered = PROPERTIES.filter(p => {
+    const s = state[p.pass];
+    if (fStatus !== 'all' && s.status !== fStatus) return false;
+    if (fBeach !== 'all' && p.beach !== fBeach) return false;
+    if (beachFilter !== 'all' && p.beach !== beachFilter) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.address.toLowerCase().includes(q) && !p.pass.includes(q)) return false;
+    return true;
+  });
+
+  const wrap = document.getElementById('table-wrap');
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>No properties match.</div>';
+    return;
+  }
+
+  const beachClass = { MFD:'b-mfd', Wuskenau:'b-wusk', Dunes:'b-dunes' };
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Pass #</th><th>Property</th><th class="hide-sm">Address</th><th>Beach</th><th>Status</th>
+      <th class="hide-sm">Last in</th><th class="hide-sm">Last out</th><th class="hide-sm">Visits</th><th></th>
+    </tr></thead>
+    <tbody>${filtered.map(p => {
+      const s = state[p.pass];
+      return `<tr class="${s.status==='in'?'row-in':''}">
+        <td class="mono">${p.pass}</td>
+        <td style="font-weight:500">${p.name}${p.note?`<span class="note-tag">${p.note}</span>`:''}</td>
+        <td class="hide-sm" style="color:#888;font-size:12px">${p.address}</td>
+        <td><span class="badge ${beachClass[p.beach]||''}">${p.beach}</span></td>
+        <td><span class="badge ${s.status==='in'?'b-in':'b-out'}">${s.status==='in'?'● in':s.status==='out'?'○ out':'—'}</span></td>
+        <td class="hide-sm" style="color:#999;font-size:12px">${s.lastIn||'—'}</td>
+        <td class="hide-sm" style="color:#999;font-size:12px">${s.lastOut||'—'}</td>
+        <td class="hide-sm" style="color:#999">${s.visits||0}</td>
+        <td><div class="acts">
+          ${s.status==='in'
+            ? `<button class="act-btn" onclick="doCheckOut('${p.pass}')">Out</button>`
+            : `<button class="act-btn go" onclick="doCheckIn('${p.pass}')">In</button>`}
+          <button class="act-btn danger" onclick="resetPass('${p.pass}')" title="Reset">↺</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function exportCSV() {
+  const rows = [['Pass #','Property','Address','Beach','Status','Last In','Last Out','Visits','Note']];
+  PROPERTIES.forEach(p => {
+    const s = state[p.pass];
+    rows.push([p.pass, p.name, p.address, p.beach, s.status, s.lastIn||'', s.lastOut||'', s.visits||0, p.note||'']);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'beach_passes_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('ac-list').className = 'autocomplete';
+  }
+});
+
+updateStats(); renderTable();
+</script>
+</body>
+</html>
