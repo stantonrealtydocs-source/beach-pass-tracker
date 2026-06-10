@@ -87,9 +87,6 @@
   .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
   .b-in  { background: #e1f5ee; color: #085041; }
   .b-out { background: #f1efe8; color: #5f5e5a; }
-  .b-mfd { background: #e6f1fb; color: #0c447c; }
-  .b-wusk { background: #faeeda; color: #633806; }
-  .b-dunes { background: #eeedfe; color: #3c3489; }
 
   .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #888; }
 
@@ -115,8 +112,6 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.success { background: #0F6E56; }
   .toast.error { background: #a32d2d; }
-
-  .note-tag { font-size: 11px; background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -144,18 +139,11 @@
     <div class="stat"><div class="stat-label">Never checked in</div><div class="stat-val" id="s-never">0</div></div>
   </div>
 
-  <div class="beach-tabs">
-    <button class="tab active" onclick="setBeach('all', this)">All beaches</button>
-    <button class="tab" onclick="setBeach('MFD', this)">Misquamicut / MFD</button>
-    <button class="tab" onclick="setBeach('Wuskenau', this)">Wuskenau</button>
-    <button class="tab" onclick="setBeach('Dunes', this)">Dunes</button>
-  </div>
-
   <div class="panel">
     <div class="panel-title">Check in / check out a property</div>
     <div class="search-wrap">
       <span class="icon">🔍</span>
-      <input type="text" id="prop-search" placeholder="Search by property name, address, or pass number…" autocomplete="off" oninput="onSearch()" onkeydown="onSearchKey(event)" />
+      <input type="text" id="prop-search" placeholder="Search by property name or address…" autocomplete="off" oninput="onSearch()" onkeydown="onSearchKey(event)" />
       <div class="autocomplete" id="ac-list"></div>
     </div>
     <div class="selected-prop" id="sel-prop">
@@ -168,7 +156,7 @@
   </div>
 
   <div class="panel">
-    <div class="panel-title">All passes</div>
+    <div class="panel-title">All properties</div>
     <div class="filter-row">
       <input type="text" id="search" placeholder="Filter table…" oninput="renderTable()" />
       <select id="filter-status" onchange="renderTable()">
@@ -176,12 +164,6 @@
         <option value="in">Checked in</option>
         <option value="out">Checked out</option>
         <option value="never">Never checked in</option>
-      </select>
-      <select id="filter-beach" onchange="renderTable()">
-        <option value="all">All beaches</option>
-        <option value="MFD">MFD</option>
-        <option value="Wuskenau">Wuskenau</option>
-        <option value="Dunes">Dunes</option>
       </select>
       <button class="act-btn" onclick="exportCSV()">Export CSV</button>
     </div>
@@ -194,58 +176,123 @@
 
 <script>
 const PROPERTIES = [
-  { name:"Sandbox", address:"4 Boxwood Ave", beach:"MFD", pass:"####", note:"Anchors Away label" },
-  { name:"Wojo's Home Away from Home", address:"66 Kimball Ave", beach:"MFD", pass:"4483" },
-  { name:"Florido", address:"3 Third St", beach:"MFD", pass:"4468" },
-  { name:"Gwennapaug Inn", address:"19 Rabbit Run", beach:"MFD", pass:"4467" },
-  { name:"Regan", address:"18 Second St", beach:"MFD", pass:"4466" },
-  { name:"Copper's Beach House", address:"102 Winnapaug Rd", beach:"MFD", pass:"4465" },
-  { name:"Beach Rose", address:"65 Kimball Ave", beach:"MFD", pass:"4482" },
-  { name:"Cape Franklin", address:"62 Fishermans Ave", beach:"MFD", pass:"4481" },
-  { name:"Moonshell", address:"61 Lawton Ave", beach:"MFD", pass:"4480" },
-  { name:"Seagals", address:"61 Benson Ave", beach:"MFD", pass:"4479" },
-  { name:"Vitamin Sea", address:"58 Kimball Ave", beach:"MFD", pass:"4478" },
-  { name:"Betty B", address:"54 Kimball Ave", beach:"MFD", pass:"4476" },
-  { name:"Seatauk", address:"51 Montauk Ave", beach:"MFD", pass:"4475" },
-  { name:"Oceaneer", address:"43 Lawton Ave", beach:"MFD", pass:"4473" },
-  { name:"Jacques", address:"51 Maplewood Ave", beach:"MFD", pass:"4474" },
-  { name:"Michaels", address:"87 Ocean View Hgwy", beach:"MFD", pass:"4489" },
-  { name:"Anchors Away", address:"4 Linwood Ave", beach:"MFD", pass:"4470" },
-  { name:"Beach Daze", address:"67 Lawton Ave", beach:"MFD", pass:"4484" },
-  { name:"Breeze Inn", address:"42 Kimball Ave", beach:"MFD", pass:"4472" },
-  { name:"Legasea", address:"40 Kimball Ave", beach:"MFD", pass:"4471" },
-  { name:"Atlantic Escape", address:"84 Winnapaug Rd", beach:"MFD", pass:"4488" },
-  { name:"Dad's Dream", address:"82 Winnapaug Rd", beach:"MFD", pass:"4487" },
-  { name:"Family Ties", address:"74 Uzzi Ave", beach:"MFD", pass:"4486" },
-  { name:"The Cedars", address:"74 Crandall Ave", beach:"MFD", pass:"4485" },
-  { name:"Sweet Dreams", address:"78 Uzzi Ave", beach:"MFD", pass:"4382" },
-  { name:"Stanton 1", address:"54 Atlantic Ave", beach:"MFD", pass:"4491" },
-  { name:"Stanton 2", address:"60 Atlantic Ave", beach:"MFD", pass:"4490" },
-  { name:"Stanton 3", address:"58 Atlantic Ave", beach:"MFD", pass:"4477" },
-  { name:"Seas The Day", address:"446 Atlantic Ave", beach:"Wuskenau", pass:"23" },
-  { name:"Searose", address:"420 Atlantic Ave", beach:"Wuskenau", pass:"22" },
-  { name:"Decked Out", address:"191 Shore Rd", beach:"Wuskenau", pass:"20" },
-  { name:"Hawk's Nest", address:"458 Atlantic Ave", beach:"Wuskenau", pass:"21" },
-  { name:"Alla Vita", address:"26 Clifford Dr", beach:"Dunes", pass:"3443" },
-  { name:"Bellaview", address:"10 Bellerose Ave", beach:"Dunes", pass:"3444" },
-  { name:"Breachway By The Sea", address:"1 Weekapaug Rd", beach:"Dunes", pass:"3445" },
-  { name:"Dolce Vita", address:"31 Charlene Ave", beach:"Dunes", pass:"3446" },
-  { name:"Dunes Hide-A-Way", address:"24 Quannacut Rd", beach:"Dunes", pass:"3447" },
-  { name:"Hatfield", address:"7 Painter Rd", beach:"Dunes", pass:"3448" },
-  { name:"Ianiello", address:"15 Terrace Ave", beach:"Dunes", pass:"3449" },
-  { name:"Liz's", address:"27 Langworthy Rd", beach:"Dunes", pass:"3450" },
-  { name:"Lois", address:"16 Ricci Rd", beach:"Dunes", pass:"3451" },
-  { name:"Matty", address:"17 Matarese Hills", beach:"Dunes", pass:"3452" },
-  { name:"Pond View", address:"32 Governor Ave", beach:"Dunes", pass:"3453" },
-  { name:"Sacco Large", address:"14 Utter St", beach:"Dunes", pass:"3454" },
-  { name:"The Sand Cliff", address:"20 Clifford Dr", beach:"Dunes", pass:"3455" }
+  { name:"Alla Vita", address:"26 Clifford Drive" },
+  { name:"Anchors Away", address:"4 Linwood Avenue" },
+  { name:"Atlantic Escape", address:"84 Winnapaug Road" },
+  { name:"Beach Bunny 1", address:"6 Rabbit Run U1" },
+  { name:"Beach Bunny 3", address:"6 Rabbit Run U3" },
+  { name:"Beach Daze", address:"67 Lawton Ave" },
+  { name:"Beach Plum", address:"415 Atlantic Avenue" },
+  { name:"Beach Rose", address:"65 Kimball Ave" },
+  { name:"Bella Vita", address:"397 Atlantic Ave" },
+  { name:"Bellaview", address:"10 Bellerose Avenue" },
+  { name:"Benson", address:"16 Benson Ave" },
+  { name:"Betty B", address:"54 Kimball Avenue" },
+  { name:"Blue Starfish", address:"117 Atlantic Ave" },
+  { name:"Breachway By The Sea", address:"1 Weekapaug Rd" },
+  { name:"Breeze Inn", address:"42 Kimball Avenue" },
+  { name:"By The Sea", address:"28 Uzzi ave" },
+  { name:"Camp Cotton", address:"21 Collins Avenue" },
+  { name:"Cape Franklin", address:"62 Fisherman's Avenue" },
+  { name:"Casa Chrissal", address:"143 Winnapaug Road" },
+  { name:"Chip's Place", address:"58 Montauk Avenue" },
+  { name:"Copper Beech House", address:"102 Winnapaug Road" },
+  { name:"Cove Haven", address:"19 Cove Road" },
+  { name:"Cozy Cottage", address:"8 Utter Street" },
+  { name:"Dads Dream", address:"82 Winnapaug Road" },
+  { name:"Decked Out", address:"191 Shore Road" },
+  { name:"Dolce Vita", address:"31 Charlene Ave" },
+  { name:"Driftwood", address:"11 Breach Drive" },
+  { name:"Dunes Hide-A-Way", address:"24 Quannacut Rd" },
+  { name:"Endless Summer", address:"15 Uzzi ave" },
+  { name:"Family Ties", address:"74 Uzzi Avenue" },
+  { name:"Fazzys", address:"31 Crandall Avenue" },
+  { name:"Florido", address:"3 Third Street" },
+  { name:"Gone Coastal", address:"22 Crandall Avenue" },
+  { name:"Grams & Gramps", address:"9 Maplewood Ave" },
+  { name:"Gratitude", address:"411 Atlantic Avenue" },
+  { name:"Grey Squirrel", address:"74 Atlantic Avenue" },
+  { name:"Gwennapaug Inn", address:"19 Rabbit Run" },
+  { name:"Hannah", address:"11 Benson Avenue" },
+  { name:"Hatfield", address:"7 Painter Road" },
+  { name:"Hawk's Nest", address:"458 Atlantic Avenue" },
+  { name:"High Seas", address:"29 First Street" },
+  { name:"Ianniello", address:"15 Terrace Avenue" },
+  { name:"Jacques", address:"51 Maplewood Avenue" },
+  { name:"Jon", address:"27 Crandall Avenue" },
+  { name:"Judy's Gem", address:"102 Atlantic Avenue" },
+  { name:"Kahana", address:"15 Snowberry" },
+  { name:"Kelly's Cottage", address:"4 Breach Drive" },
+  { name:"Krams Place", address:"53.5 Atlantic Avenue" },
+  { name:"Legasea", address:"40 Kimball Avenue" },
+  { name:"Lindy", address:"88 Atlantic Avenue" },
+  { name:"Lizs", address:"27 Langworthy Road" },
+  { name:"Lois", address:"16 Ricci Road" },
+  { name:"Long Cottage", address:"31 Uzzi Avenue" },
+  { name:"M&M", address:"22 Montauk Avenue" },
+  { name:"MaCabee Cottage", address:"230 Shore Road" },
+  { name:"Maplewood Tides", address:"57 Maplewood Ave" },
+  { name:"Matty", address:"17 Matarese Hills" },
+  { name:"Michaels", address:"87 Ocean View Highway" },
+  { name:"Minnow", address:"60 Atlantic Avenue" },
+  { name:"MnD's", address:"35 Breach Drive" },
+  { name:"Moonshell", address:"61 Lawton Avenue" },
+  { name:"OBee's Place", address:"30 Kimball Avenue" },
+  { name:"Ocean Eyes", address:"6 Kimball Ave" },
+  { name:"Oceaneer", address:"43 Lawton Ave" },
+  { name:"Odysea", address:"38 First Street" },
+  { name:"Ohana", address:"12 Breach Drive" },
+  { name:"Osprey", address:"33 Uzzi Avenue" },
+  { name:"Pinho", address:"8 Kimball Avenue" },
+  { name:"Pinto's Place", address:"4 Benson Avenue" },
+  { name:"Point One", address:"39 First Street" },
+  { name:"Pond View", address:"32 Governor Ave" },
+  { name:"Pondside Paradise", address:"12 Ricci Road" },
+  { name:"Regan", address:"18 Second Street" },
+  { name:"Rip Curl", address:"5 Rip Tide Dr." },
+  { name:"Ruszenas", address:"29 Breach Drive" },
+  { name:"Sacco Large", address:"14 Utter Street" },
+  { name:"Saltbox", address:"18 Collins Avenue" },
+  { name:"Sambucca", address:"58 Atlantic Avenue" },
+  { name:"San Cristabal", address:"19 Fisherman's Avenue" },
+  { name:"Sandbox", address:"4 Boxwood Avenue" },
+  { name:"Sandcastle", address:"507 Atlantic Ave" },
+  { name:"Sandtrap", address:"1 Elmwood Avenue" },
+  { name:"Sea Esta", address:"13 Breach Drive" },
+  { name:"Sea Shell Cottage", address:"51 Lawton Avenue" },
+  { name:"Seagals", address:"61 Benson Avenue" },
+  { name:"Seanest", address:"8 Lawton Avenue" },
+  { name:"Searose", address:"420 Atlantic Avenue" },
+  { name:"Seas The Day", address:"446 Atlantic Avenue" },
+  { name:"Seatauk", address:"51 Montauk Ave" },
+  { name:"Stowaway", address:"11 Maplewood Avenue" },
+  { name:"Summer Hill", address:"9 Elmwood Avenue" },
+  { name:"Sunflower", address:"37 Crandall Avenue" },
+  { name:"Sunset Condo A", address:"Watch Hill, 54 Bay St" },
+  { name:"Sunset Condo B", address:"Watch Hill, 54 Bay St" },
+  { name:"Sunset Condo D", address:"Watch Hill, 54 Bay St" },
+  { name:"Sunset Condo E", address:"Watch Hill, 54 Bay St" },
+  { name:"Sunset Retreat", address:"390 Atlantic Ave" },
+  { name:"Surfside", address:"4 Kimball Avenue" },
+  { name:"Sweet Dreams", address:"78 Uzzi Avenue" },
+  { name:"The Beach Spot", address:"56 Montauk Ave" },
+  { name:"The Breach House", address:"10 Breach Drive" },
+  { name:"The Cedars", address:"74 Crandall Ave" },
+  { name:"The Little Toot", address:"5 Uzzi Ave" },
+  { name:"The Maples", address:"23 Maplewood Ave" },
+  { name:"The Sand Cliff", address:"20 Clifford Drive" },
+  { name:"The Seaside Appartment", address:"662 Atlantic Ave" },
+  { name:"Top Sail", address:"493 Atlantic Avenue" },
+  { name:"Violet", address:"3 Violet Lane" },
+  { name:"Vitamin Sea", address:"58 Kimball Avenue" },
+  { name:"Wojo's Home Away From Home", address:"66 Kimball Avenue" }
 ];
 
 let state = {};
 try { state = JSON.parse(localStorage.getItem('bpt_state') || '{}'); } catch(e) {}
 
-PROPERTIES.forEach(p => {
-  if (!state[p.pass]) state[p.pass] = { status: 'never', lastIn: null, lastOut: null, visits: 0 };
+PROPERTIES.forEach((p, i) => {
+  if (!state[i]) state[i] = { status: 'never', lastIn: null, lastOut: null, visits: 0 };
 });
 
 function save() {
@@ -267,24 +314,15 @@ function toast(msg, type='success') {
 
 document.getElementById('top-date').textContent = new Date().toLocaleDateString([], { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
-let beachFilter = 'all';
-function setBeach(b, el) {
-  beachFilter = b;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  renderTable();
-}
-
 let selectedProp = null;
 let acIndex = -1;
 
 function matchProps(q) {
   q = q.toLowerCase().trim();
   if (!q) return [];
-  return PROPERTIES.filter(p =>
+  return PROPERTIES.map((p, i) => ({ ...p, idx: i })).filter(p =>
     p.name.toLowerCase().includes(q) ||
-    p.address.toLowerCase().includes(q) ||
-    p.pass.includes(q)
+    p.address.toLowerCase().includes(q)
   ).slice(0, 8);
 }
 
@@ -296,20 +334,18 @@ function onSearch() {
   if (!results.length || !q.trim()) { ac.className = 'autocomplete'; return; }
   ac.className = 'autocomplete open';
   ac.innerHTML = results.map((p, i) => {
-    const s = state[p.pass];
+    const s = state[p.idx];
     const statusBadge = s.status === 'in'
       ? '<span class="ac-status ac-in">● in</span>'
       : s.status === 'out'
         ? '<span class="ac-status ac-out">○ out</span>'
         : '';
-    return `<div class="ac-item" onclick="selectProp('${p.pass}')" data-i="${i}">
+    return `<div class="ac-item" onclick="selectProp(${p.idx})" data-i="${i}">
       <div>
-        <div class="ac-name">${p.name}${p.note ? `<span class="note-tag">${p.note}</span>` : ''}</div>
-        <div class="ac-sub">${p.address} · ${p.beach}</div>
+        <div class="ac-name">${p.name}</div>
+        <div class="ac-sub">${p.address}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="ac-pass">#${p.pass}</span>${statusBadge}
-      </div>
+      <div>${statusBadge}</div>
     </div>`;
   }).join('');
 }
@@ -327,77 +363,73 @@ function highlightAc(items) {
   items.forEach((el, i) => el.style.background = i === acIndex ? '#f5fdf9' : '');
 }
 
-function selectProp(pass) {
-  const p = PROPERTIES.find(x => x.pass === pass);
-  if (!p) return;
-  selectedProp = p;
-  document.getElementById('prop-search').value = p.name;
+function selectProp(idx) {
+  selectedProp = idx;
+  document.getElementById('prop-search').value = PROPERTIES[idx].name;
   document.getElementById('ac-list').className = 'autocomplete';
   renderSelectedProp();
 }
 
 function renderSelectedProp() {
-  const p = selectedProp;
-  if (!p) return;
-  const s = state[p.pass];
+  const idx = selectedProp;
+  if (idx === null) return;
+  const p = PROPERTIES[idx];
+  const s = state[idx];
   const el = document.getElementById('sel-prop');
   el.className = 'selected-prop show';
-  document.getElementById('sel-name').innerHTML = p.name + (p.note ? `<span class="note-tag">${p.note}</span>` : '');
-  document.getElementById('sel-sub').textContent = `${p.address} · ${p.beach} · Pass #${p.pass}` +
+  document.getElementById('sel-name').textContent = p.name;
+  document.getElementById('sel-sub').textContent = p.address +
     (s.lastIn ? ` · Last in: ${s.lastIn}` : '') +
     (s.lastOut ? ` · Last out: ${s.lastOut}` : '');
   const acts = document.getElementById('sel-actions');
   if (s.status === 'in') {
-    acts.innerHTML = `<button class="btn-out" onclick="doCheckOut('${p.pass}')">Check out</button>`;
+    acts.innerHTML = `<button class="btn-out" onclick="doCheckOut(${idx})">Check out</button>`;
   } else {
-    acts.innerHTML = `<button class="btn-in" onclick="doCheckIn('${p.pass}')">Check in</button>`;
+    acts.innerHTML = `<button class="btn-in" onclick="doCheckIn(${idx})">Check in</button>`;
   }
 }
 
-function doCheckIn(pass) {
-  const p = PROPERTIES.find(x => x.pass === pass);
-  state[pass].status = 'in';
-  state[pass].lastIn = dts();
-  state[pass].visits = (state[pass].visits || 0) + 1;
+function doCheckIn(idx) {
+  const p = PROPERTIES[idx];
+  state[idx].status = 'in';
+  state[idx].lastIn = dts();
+  state[idx].visits = (state[idx].visits || 0) + 1;
   toast(`${p.name} checked in ✓`);
   save(); updateStats(); renderTable(); renderSelectedProp();
 }
 
-function doCheckOut(pass) {
-  const p = PROPERTIES.find(x => x.pass === pass);
-  state[pass].status = 'out';
-  state[pass].lastOut = dts();
+function doCheckOut(idx) {
+  const p = PROPERTIES[idx];
+  state[idx].status = 'out';
+  state[idx].lastOut = dts();
   toast(`${p.name} checked out`);
   save(); updateStats(); renderTable(); renderSelectedProp();
 }
 
-function resetPass(pass) {
-  const p = PROPERTIES.find(x => x.pass === pass);
+function resetPass(idx) {
+  const p = PROPERTIES[idx];
   if (!confirm(`Reset status for ${p.name}?`)) return;
-  state[pass] = { status:'never', lastIn:null, lastOut:null, visits:0 };
+  state[idx] = { status:'never', lastIn:null, lastOut:null, visits:0 };
   toast(`${p.name} reset`);
   save(); updateStats(); renderTable();
-  if (selectedProp && selectedProp.pass === pass) renderSelectedProp();
+  if (selectedProp === idx) renderSelectedProp();
 }
 
 function updateStats() {
   const all = PROPERTIES;
   document.getElementById('s-total').textContent = all.length;
-  document.getElementById('s-in').textContent = all.filter(p => state[p.pass].status === 'in').length;
-  document.getElementById('s-out').textContent = all.filter(p => state[p.pass].status === 'out').length;
-  document.getElementById('s-never').textContent = all.filter(p => state[p.pass].status === 'never').length;
+  document.getElementById('s-in').textContent = all.filter((p, i) => state[i].status === 'in').length;
+  document.getElementById('s-out').textContent = all.filter((p, i) => state[i].status === 'out').length;
+  document.getElementById('s-never').textContent = all.filter((p, i) => state[i].status === 'never').length;
 }
 
 function renderTable() {
   const q = document.getElementById('search').value.toLowerCase();
   const fStatus = document.getElementById('filter-status').value;
-  const fBeach = document.getElementById('filter-beach').value;
-  const filtered = PROPERTIES.filter(p => {
-    const s = state[p.pass];
+  const filtered = PROPERTIES.map((p, i) => ({ ...p, idx: i })).filter(p => {
+    const s = state[p.idx];
     if (fStatus !== 'all' && s.status !== fStatus) return false;
-    if (fBeach !== 'all' && p.beach !== fBeach) return false;
-    if (beachFilter !== 'all' && p.beach !== beachFilter) return false;
-    if (q && !p.name.toLowerCase().includes(q) && !p.address.toLowerCase().includes(q) && !p.pass.includes(q)) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.address.toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -407,28 +439,25 @@ function renderTable() {
     return;
   }
 
-  const beachClass = { MFD:'b-mfd', Wuskenau:'b-wusk', Dunes:'b-dunes' };
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>Pass #</th><th>Property</th><th class="hide-sm">Address</th><th>Beach</th><th>Status</th>
+      <th>Property</th><th class="hide-sm">Address</th><th>Status</th>
       <th class="hide-sm">Last in</th><th class="hide-sm">Last out</th><th class="hide-sm">Visits</th><th></th>
     </tr></thead>
     <tbody>${filtered.map(p => {
-      const s = state[p.pass];
+      const s = state[p.idx];
       return `<tr class="${s.status==='in'?'row-in':''}">
-        <td class="mono">${p.pass}</td>
-        <td style="font-weight:500">${p.name}${p.note?`<span class="note-tag">${p.note}</span>`:''}</td>
+        <td style="font-weight:500">${p.name}</td>
         <td class="hide-sm" style="color:#888;font-size:12px">${p.address}</td>
-        <td><span class="badge ${beachClass[p.beach]||''}">${p.beach}</span></td>
         <td><span class="badge ${s.status==='in'?'b-in':'b-out'}">${s.status==='in'?'● in':s.status==='out'?'○ out':'—'}</span></td>
         <td class="hide-sm" style="color:#999;font-size:12px">${s.lastIn||'—'}</td>
         <td class="hide-sm" style="color:#999;font-size:12px">${s.lastOut||'—'}</td>
         <td class="hide-sm" style="color:#999">${s.visits||0}</td>
         <td><div class="acts">
           ${s.status==='in'
-            ? `<button class="act-btn" onclick="doCheckOut('${p.pass}')">Out</button>`
-            : `<button class="act-btn go" onclick="doCheckIn('${p.pass}')">In</button>`}
-          <button class="act-btn danger" onclick="resetPass('${p.pass}')" title="Reset">↺</button>
+            ? `<button class="act-btn" onclick="doCheckOut(${p.idx})">Out</button>`
+            : `<button class="act-btn go" onclick="doCheckIn(${p.idx})">In</button>`}
+          <button class="act-btn danger" onclick="resetPass(${p.idx})" title="Reset">↺</button>
         </div></td>
       </tr>`;
     }).join('')}</tbody>
@@ -436,10 +465,10 @@ function renderTable() {
 }
 
 function exportCSV() {
-  const rows = [['Pass #','Property','Address','Beach','Status','Last In','Last Out','Visits','Note']];
-  PROPERTIES.forEach(p => {
-    const s = state[p.pass];
-    rows.push([p.pass, p.name, p.address, p.beach, s.status, s.lastIn||'', s.lastOut||'', s.visits||0, p.note||'']);
+  const rows = [['Property','Address','Status','Last In','Last Out','Visits']];
+  PROPERTIES.forEach((p, i) => {
+    const s = state[i];
+    rows.push([p.name, p.address, s.status, s.lastIn||'', s.lastOut||'', s.visits||0]);
   });
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const a = document.createElement('a');
